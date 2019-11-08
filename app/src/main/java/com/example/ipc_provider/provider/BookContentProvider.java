@@ -41,7 +41,7 @@ public class BookContentProvider extends ContentProvider {
         mSQLiteDatabase.execSQL("insert into book values(1,'java');");
         mSQLiteDatabase.execSQL("insert into book values(2,'android');");
         mSQLiteDatabase.execSQL("insert into book values(3,'ios');");
-        return true;
+        return mSQLiteDatabase != null;
     }
 
     @androidx.annotation.Nullable

@@ -2,16 +2,18 @@ package com.example.ipc_provider;
 
 import android.content.ContentValues;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.example.ipc_provider.bean.Book;
+import com.example.ipc_provider.observer.ContentObserverHelper;
+import com.example.ipc_provider.observer.IOnBookChangedListener;
 import com.example.ipc_provider.provider.BookContentProvider;
 
-import androidx.annotation.NonNull;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -20,35 +22,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        sayHello(null);
         int checkResult = checkCallingOrSelfPermission("com.example.ipc_provider.provider.BookContentProvider");
         if (checkResult == PackageManager.PERMISSION_DENIED) {
             Log.e(TAG, "onBind failed,permission deny!");
             return;
         }
         //Uri uri = Uri.parse("content://com.example.ipc_provider.provider.BookContentProvider");//authorities
-        Uri uri = BookContentProvider.BOOK_CONTENT_URI;
+        ContentObserverHelper.getInstance().init(this, new IOnBookChangedListener() {
+            @Override
+            public void onBookChanged(List<Book> books) {
+                for (int i = 0; i < books.size(); i++) {
+                    Log.e(TAG, books.get(i).toString());
+                }
+            }
+        });
+        List<Book> books = ContentObserverHelper.getInstance().getBook();
+        for (int i = 0; i < books.size(); i++) {
+            Log.e(TAG, books.get(i).toString());
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ContentObserverHelper.getInstance().unregisterContentObserver();
+    }
+
+    public void onClick(View view) {
+        //insert
         ContentValues values = new ContentValues();
         values.put("bookId", 6);
         values.put("bookName", "testBook");
+        Uri uri = BookContentProvider.BOOK_CONTENT_URI;
         getContentResolver().insert(uri, values);
-        Cursor cursor = getContentResolver().query(uri, new String[]{"bookId", "bookName"}, null, null, null);
-        while (cursor.moveToNext()) {
-            Book book = new Book();
-            book.bookId = cursor.getInt(0);
-            book.bookName = cursor.getString(1);
-            Log.e("tag", "query book:" + book.toString());
-        }
-        Log.e("tag", "finished!");
-        cursor.close();
-
-//        getContentResolver().query(uri, null, null, null, null);
-//        getContentResolver().query(uri, null, null, null, null);
-//        getContentResolver().query(uri, null, null, null, null);
-
-    }
-
-    private void sayHello(@NonNull String hello) {
-        System.out.println(hello);
     }
 }
